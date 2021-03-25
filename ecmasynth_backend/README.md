@@ -1,24 +1,11 @@
-# README
+# ECMASynth!
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+- A synthesizer built with vanilla JavaScript and Tone.JS (frontend folder)
 
-Things you may want to cover:
+- A Rails backend to implement storage (backend folder)
 
-* Ruby version
+To do:
 
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+- tweakable effects/parameters/modulation
+- sequencer with preloaded patterns/memory banks
+- preloaded selectable samples
