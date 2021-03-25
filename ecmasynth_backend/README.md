@@ -1,8 +1,6 @@
-# ECMASynth!
+# ECMASynth Backend
 
-- A synthesizer built with vanilla JavaScript and Tone.JS (frontend folder)
-
-- A Rails backend to implement storage (backend folder)
+- A Rails backend to implement storage
 
 To do:
 
