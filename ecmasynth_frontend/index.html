@@ -8,6 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.15/Tone.js"></script>
     <title>**~~*~ECMA SYNTH~*~~**</title>
   </head>
+
   <style>
     #synth-container {
       position: absolute;
@@ -41,19 +42,20 @@
     <div id="synth-container"></div>
 
     <script>
+      // create synth voices
       const voice1 = new Tone.PolySynth(Tone.FMSynth).toDestination();
       const voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
-
+      //  create fx
       const reverb = new Tone.Reverb(35.0).toDestination();
       const delay = new Tone.Delay(0.5).toDestination();
       const delay2 = new Tone.Delay(0.25).toDestination();
       const vibrato = new Tone.Vibrato(8.0).toDestination();
-
+      // connect fx
       voice1.connect(delay);
       voice2.connect(vibrato);
       voice1.connect(reverb);
       voice2.connect(delay2);
-
+      // create keyboard interface
       const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
       let html = '';
@@ -64,19 +66,21 @@
           let whiteNote = notes[i];
 
           if (whiteNote == 'E' || whiteNote == 'B') hasSharp = false;
-
-          html += `<div class='whitenote' 
-							onmousedown='noteDown(this, false)' 
-							onmouseup='noteUp(this, false)'
-							onmouseleave='noteUp(this, false)'
-            	data-note='${note + (octave + 4)}'>`;
+          // can move to javascript event listeners because that's what people may tell you to do but does it really make sense here?
+          // yes I understand the concept of manipulating HTML with JS but in this instance why bother? this makes everything less bloated
+          // and is just as easy to read
+          html += `<div class='whitenote'
+      						onmousedown='noteDown(this, false)'
+      						onmouseup='noteUp(this, false)'
+      						onmouseleave='noteUp(this, false)'
+                 	data-note='${note + (octave + 4)}'>`;
 
           if (hasSharp) {
-            html += `<div class='blacknote' 
-							onmousedown='noteDown(this, true)'
-							onmouseup='noteUp(this, true)'
-							onmouseleave='noteUp(this, true)'
-              data-note='${note + '#' + (octave + 4)}'></div>`;
+            html += `<div class='blacknote'
+      						onmousedown='noteDown(this, true)'
+      						onmouseup='noteUp(this, true)'
+      						onmouseleave='noteUp(this, true)'
+                   data-note='${note + '#' + (octave + 4)}'></div>`;
           }
 
           html += '</div>';
@@ -86,7 +90,7 @@
       document.getElementById('synth-container').innerHTML = html;
 
       // accessing the previously declared data attribute using dataset.note
-
+      // turning keys different colors when pressed and then back to og color on release
       function noteUp(element, isSharp) {
         element.style.background = isSharp ? '#777' : 'white';
       }
@@ -96,6 +100,7 @@
 
         const note = element.dataset.note;
 
+        // building envelope generators
         voice1.triggerAttackRelease(note, '32n');
         voice2.triggerAttackRelease(note, '32n');
 
