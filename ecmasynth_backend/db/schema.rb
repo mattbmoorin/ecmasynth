@@ -16,9 +16,9 @@ ActiveRecord::Schema.define(version: 2021_03_28_060057) do
   enable_extension "plpgsql"
 
   create_table "synths", force: :cascade do |t|
-    t.integer "envelope"
-    t.integer "reverb"
-    t.integer "delay"
+    t.string "envelope"
+    t.string "reverb"
+    t.string "delay"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end

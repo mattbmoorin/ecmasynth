@@ -40,62 +40,70 @@
 
   <body>
     <div id="synth-container"></div>
-    <div id="form-container">
-      <form id="synth-form">
-        <label for="reverb">Reverb:</label><br />
-        <input type="text" id="reverb"><br />
-        <label for="delay">Delay:</label><br />
-        <input type="text" id="delay"><br />
-        <label for="envelope">Attack/Release Envelope:</label><br />
-        <input type="text" id="envelope"><br />
-        <input type="submit" value="Save Preset">
-      </form>
-    </div>
+ 
+    <form id="synth-form">
+      <label for="envelope">Attack/Release Envelope:</label><br />
+      <input type="text" id="envelope" value="4n"><br />
+      <label for="reverb">Reverb:</label><br />
+      <input type="text" id="reverb" value="10"><br />
+      <button type="button" id="reverb-button">Set</button><br />
+      <label for="delay">Delay:</label><br />
+      <input type="text" id="delay" value="0"><br />
+      <input type="submit" value="Save Preset">
+    </form>
 
     <script>
+      const baseUrl = 'http://localhost:3000/synth'
+      
+      const synthForm = document.getElementById('synth-form');
+      const envelope = document.getElementById('envelope');
+      const reverb = document.getElementById('reverb');
+      const delay = document.getElementById('delay');
 
-      baseUrl = "https://localhost:3000/synths"
-
-      const getSynths = () => {
-        return fetch(baseUrl).then((res) => res.json());
-      }
-
-      const sendSynth = (value) => {
+      const reverbButton = document.getElementById('reverb-button');
+    
+      reverbButton.addEventListener('click', setReverb);
+      synthForm.addEventListener('submit', createSynth);
+      
+      function createSynth(e) {
+        e.preventDefault();
+        
         let synth = {
-          reverb: value,
-          delay: value,
-          envelope: value
-        }
+          envelope: envelope.value,
+          reverb: reverb.value,
+          delay: delay.value
+        };
         return fetch(baseUrl, {
           method: 'POST',
           headers: {
-            'content-type': 'application/json'
+            'content-type': 'application/json',
+            'accept': 'application/json'
           },
-          body: JSON.stringify({
-            synth
-          })
+          body: JSON.stringify(synth)
         })
-        .then(res => res.json());
-      }
+        .then(res => res.json())
+      };
 
-      const fetchSynth = (e) => {
-        e.preventDefault();
-        const value = document.getElementById('reverb');
-      }
+      function setReverb(e) {
 
+      }
+      
+      const getSynths = () => {
+        return fetch(baseUrl).then((res) => res.json());
+      }
       // create synth voices
       const voice1 = new Tone.PolySynth(Tone.FMSynth).toDestination();
       const voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
       //  create fx
-      const reverb = new Tone.Reverb(35.0).toDestination();
-      const delay = new Tone.Delay(0.5).toDestination();
-      const delay2 = new Tone.Delay(0.25).toDestination();
-      const vibrato = new Tone.Vibrato(8.0).toDestination();
+      const reverbSetting = new Tone.Reverb(reverb.value).toDestination();
+      const delaySetting = new Tone.Delay(0.5).toDestination();
+      const delay2Setting = new Tone.Delay(0.25).toDestination();
+      const vibratoSetting = new Tone.Vibrato(8.0).toDestination();
       // connect fx
-      voice1.connect(delay);
-      voice2.connect(vibrato);
-      voice1.connect(reverb);
-      voice2.connect(delay2);
+      // voice1.connect(delay_setting);
+      // voice2.connect(vibrato_setting);
+      voice1.connect(reverbSetting);
+      // voice2.connect(delay2_setting);
       // create keyboard interface
       const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
@@ -107,7 +115,7 @@
           let whiteNote = notes[i];
 
           if (whiteNote == 'E' || whiteNote == 'B') hasSharp = false;
-          // can move to javascript event listeners because that's what people may tell you to do but does it really make sense here?
+          // can move to javascript event listeners because that's what people may tell me to do but does it really make sense here?
           // yes I understand the concept of manipulating HTML with JS but in this instance why bother? this makes everything less bloated
           // and is just as easy to read
           html += `<div class='whitenote'
@@ -144,7 +152,7 @@
         // building envelope generators
         voice1.triggerAttackRelease(note, '32n');
         voice2.triggerAttackRelease(note, '32n');
-
+        // stop propagation so accidentals dont trigger white keys
         event.stopPropagation();
       }
     </script>

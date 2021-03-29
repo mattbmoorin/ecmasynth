@@ -34,6 +34,6 @@ def index
 
   # whitelist parameters
   def synth_params
-    params.require(:synth).permit(:presets)
+    params.require(:synth).permit(:envelope, :reverb, :delay)
   end
 end
