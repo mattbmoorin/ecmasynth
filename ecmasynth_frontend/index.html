@@ -51,19 +51,31 @@
       <input type="text" id="delay" value="0"><br />
       <input type="submit" value="Save Preset">
     </form>
-
+    
     <script>
+      // create synth voices
+      let voice1 = new Tone.PolySynth(Tone.FMSynth).toDestination();
+      let voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
+    
       const baseUrl = 'http://localhost:3000/synth'
       
       const synthForm = document.getElementById('synth-form');
-      const envelope = document.getElementById('envelope');
-      const reverb = document.getElementById('reverb');
-      const delay = document.getElementById('delay');
-
+      const envelopeValue = document.getElementById('envelope');
+      const reverbValue = document.getElementById('reverb');
+      const delayValue = document.getElementById('delay');
+      
       const reverbButton = document.getElementById('reverb-button');
-    
+      
       reverbButton.addEventListener('click', setReverb);
       synthForm.addEventListener('submit', createSynth);
+      
+      const reverbSetting = new Tone.Reverb().toDestination();
+      voice1.connect(reverbSetting);
+      
+      function setReverb(e) {
+        reverbSetting.decay = reverbValue.value;
+        console.log(reverbSetting.decay);
+      }
       
       function createSynth(e) {
         e.preventDefault();
@@ -83,26 +95,18 @@
         })
         .then(res => res.json())
       };
-
-      function setReverb(e) {
-
-      }
       
       const getSynths = () => {
         return fetch(baseUrl).then((res) => res.json());
       }
-      // create synth voices
-      const voice1 = new Tone.PolySynth(Tone.FMSynth).toDestination();
-      const voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
       //  create fx
-      const reverbSetting = new Tone.Reverb(reverb.value).toDestination();
-      const delaySetting = new Tone.Delay(0.5).toDestination();
-      const delay2Setting = new Tone.Delay(0.25).toDestination();
-      const vibratoSetting = new Tone.Vibrato(8.0).toDestination();
+      // const reverbSetting = new Tone.Reverb(reverb.value).toDestination();
+      // let delaySetting = new Tone.Delay(0.5).toDestination();
+      // let delay2Setting = new Tone.Delay(0.25).toDestination();
+      // let vibratoSetting = new Tone.Vibrato(8.0).toDestination();
       // connect fx
       // voice1.connect(delay_setting);
       // voice2.connect(vibrato_setting);
-      voice1.connect(reverbSetting);
       // voice2.connect(delay2_setting);
       // create keyboard interface
       const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
