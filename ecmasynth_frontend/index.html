@@ -40,8 +40,49 @@
 
   <body>
     <div id="synth-container"></div>
+    <div id="form-container">
+      <form id="synth-form">
+        <label for="reverb">Reverb:</label><br />
+        <input type="text" id="reverb"><br />
+        <label for="delay">Delay:</label><br />
+        <input type="text" id="delay"><br />
+        <label for="envelope">Attack/Release Envelope:</label><br />
+        <input type="text" id="envelope"><br />
+        <input type="submit" value="Save Preset">
+      </form>
+    </div>
 
     <script>
+
+      baseUrl = "https://localhost:3000/synths"
+
+      const getSynths = () => {
+        return fetch(baseUrl).then((res) => res.json());
+      }
+
+      const sendSynth = (value) => {
+        let synth = {
+          reverb: value,
+          delay: value,
+          envelope: value
+        }
+        return fetch(baseUrl, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            synth
+          })
+        })
+        .then(res => res.json());
+      }
+
+      const fetchSynth = (e) => {
+        e.preventDefault();
+        const value = document.getElementById('reverb');
+      }
+
       // create synth voices
       const voice1 = new Tone.PolySynth(Tone.FMSynth).toDestination();
       const voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
