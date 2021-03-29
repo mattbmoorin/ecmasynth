@@ -40,10 +40,12 @@
 
   <body>
     <div id="synth-container"></div>
- 
+    <div id="presets-container"></div>
+
     <form id="synth-form">
       <label for="envelope">Attack/Release Envelope:</label><br />
-      <input type="text" id="envelope" value="4n"><br />
+      <input type="text" id="envelope" value=".005"><br />
+      <button type="button" id="envelope-button">Set</button><br />
       <label for="reverb">Reverb Decay Time *Cannot be 0*:</label><br />
       <input type="text" id="reverb" value="10"><br />
       <button type="button" id="reverb-button">Set</button><br />
@@ -56,6 +58,8 @@
     <script>   
       // api url
       const baseUrl = 'http://localhost:3000/synth'
+      // presets container
+      const presetsContainer = document.getElementById('presets-container');
       // values for sound parameters
       const synthForm = document.getElementById('synth-form');
       const envelopeValue = document.getElementById('envelope');
@@ -67,11 +71,12 @@
       const reverbSetting = new Tone.Reverb().toDestination();
       const delaySetting = new Tone.FeedbackDelay(0, 0.5).toDestination();
       
-      let envelopeGenerator = envelopeValue;
+      envelopeGenerator = envelopeValue.value;
       // fx signal routing
       voice1.connect(reverbSetting);
       voice1.connect(delaySetting);
       // button wiring
+      const envelopeButton = document.getElementById('envelope-button');
       const reverbButton = document.getElementById('reverb-button');
       const delayButton = document.getElementById('delay-button');
       
@@ -81,7 +86,8 @@
       synthForm.addEventListener('submit', createSynth);
       
       function setEnvelope(e) {
-        
+        envelopeGenerator = envelopeValue.value;
+        console.log(envelopeGenerator);
       }
 
       function setReverb(e) {
@@ -113,10 +119,25 @@
         .then(res => res.json())
       };
       // get presets from api
-      const getSynths = () => {
-        return fetch(baseUrl).then((res) => res.json());
+      function getSynths() {
+        return fetch(baseUrl).then(res => res.json())
+        .then(res => appendPresets(res))
+        .catch(error => console.log(error));
       }
+
+      function appendPresets(res) {
+        console.log(res);
+
+        let presetElements = res.map(preset => {
+          let li = document.createElement('li');
+          li.innerText = 'preset';
+          li.id = preset['id'];
+          return li;
+        });
+        presetElements.forEach(preset => presetsContainer.append(preset));
+      };
       
+      getSynths();
       // create keyboard interface
       const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
       
@@ -160,8 +181,8 @@
         const note = element.dataset.note;
 
         // building envelope generators
-        voice1.triggerAttackRelease(note, '.005');
-        voice2.triggerAttackRelease(note, '.005');
+        voice1.triggerAttackRelease(note, `${envelopeGenerator}`);
+        voice2.triggerAttackRelease(note, `${envelopeGenerator}`);
         // stop propagation so accidentals dont trigger white keys
         event.stopPropagation();
       }
