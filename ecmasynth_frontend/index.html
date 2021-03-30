@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.15/Tone.js"></script>
-    <title>**~~*~ECMA SYNTH~*~~**</title>
+    <title>ECMA SYNTH</title>
   </head>
 
   <style>
@@ -24,7 +24,7 @@
       width: 50px;
       background: white;
       float: left;
-      border-right: 1px solid black;
+      border-right: 1px solid rgb(0, 0, 0);
       position: relative;
     }
 
@@ -43,7 +43,7 @@
     <div id="presets-container"></div>
 
     <form id="synth-form">
-      <label for="envelope">Attack/Release Envelope:</label><br />
+      <label for="envelope">Sustain:</label><br />
       <input type="text" id="envelope" value=".005"><br />
       <button type="button" id="envelope-button">Set</button><br />
       <label for="reverb">Reverb Decay Time *Cannot be 0*:</label><br />
@@ -70,11 +70,6 @@
       const voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
       const reverbSetting = new Tone.Reverb().toDestination();
       const delaySetting = new Tone.FeedbackDelay(0, 0.5).toDestination();
-      
-      envelopeGenerator = envelopeValue.value;
-      // fx signal routing
-      voice1.connect(reverbSetting);
-      voice1.connect(delaySetting);
       // button wiring
       const envelopeButton = document.getElementById('envelope-button');
       const reverbButton = document.getElementById('reverb-button');
@@ -83,8 +78,12 @@
       envelopeButton.addEventListener('click', setEnvelope);
       delayButton.addEventListener('click', setDelay);
       reverbButton.addEventListener('click', setReverb);
-      synthForm.addEventListener('submit', createSynth);
-      
+      synthForm.addEventListener('submit', createSynth);  
+      // fx signal routing
+      envelopeGenerator = envelopeValue.value;
+      voice1.connect(reverbSetting);
+      voice1.connect(delaySetting);
+
       function setEnvelope(e) {
         envelopeGenerator = envelopeValue.value;
         console.log(envelopeGenerator);
@@ -116,21 +115,20 @@
           },
           body: JSON.stringify(synth)
         })
-        .then(res => res.json())
       };
       // get presets from api
       function getSynths() {
         return fetch(baseUrl).then(res => res.json())
         .then(res => appendPresets(res))
         .catch(error => console.log(error));
-      }
+      };
 
       function appendPresets(res) {
         console.log(res);
-
-        let presetElements = res.map(preset => {
+        
+        let presetElements = (res).map(preset => {
           let li = document.createElement('li');
-          li.innerText = 'preset';
+          li.innerText = `User Preset ${preset.id} - Sustain: ${preset.envelope}, Reverb: ${preset.reverb}, Delay: ${preset.delay}`;
           li.id = preset['id'];
           return li;
         });
@@ -183,8 +181,8 @@
         // building envelope generators
         voice1.triggerAttackRelease(note, `${envelopeGenerator}`);
         voice2.triggerAttackRelease(note, `${envelopeGenerator}`);
-        // stop propagation so accidentals dont trigger white keys
-        event.stopPropagation();
+        // stop keyagation so accidentals dont trigger white keys
+        event.stopkeyagation();
       }
     </script>
   </body>
