@@ -10,18 +10,30 @@
   </head>
 
   <style>
+    #presets-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      float: left;
+      display: inline;
+      margin-top: 30px;
+      margin-right: 30px;
+    }
+
     #synth-container {
       position: absolute;
-      height: 200px;
+      margin-top: 100px;
+      height: 300px;
       border: 5px solid black;
       top: calc(50% - 100px);
       left: calc(50% - 350px);
       overflow: hidden;
     }
 
+
     .whitenote {
       height: 100%;
-      width: 50px;
+      width: 60px;
       background: white;
       float: left;
       border-right: 1px solid rgb(0, 0, 0);
@@ -31,7 +43,7 @@
     .blacknote {
       position: absolute;
       height: 65%;
-      width: 55%;
+      width: 65%;
       z-index: 1;
       background: #777;
       left: 68%;
@@ -40,8 +52,7 @@
 
   <body>
     <div id="synth-container"></div>
-    <div id="presets-container"></div>
-
+    
     <form id="synth-form">
       <label for="envelope">Sustain:</label><br />
       <input type="text" id="envelope" value=".005"><br />
@@ -55,6 +66,7 @@
       <input type="submit" value="Save Preset">
     </form>
     
+    <div id="presets-container"></div>
     <script>   
       // api url
       const baseUrl = 'http://localhost:3000/synth'
@@ -80,7 +92,7 @@
       reverbButton.addEventListener('click', setReverb);
       synthForm.addEventListener('submit', createSynth);  
       // fx signal routing
-      envelopeGenerator = envelopeValue.value;
+      let envelopeGenerator = envelopeValue.value;
       voice1.connect(reverbSetting);
       voice1.connect(delaySetting);
 
@@ -115,6 +127,8 @@
           },
           body: JSON.stringify(synth)
         })
+        .then(res => res.json())
+        .then(res => console.log(res));
       };
       // get presets from api
       function getSynths() {
@@ -122,15 +136,43 @@
         .then(res => appendPresets(res))
         .catch(error => console.log(error));
       };
-
+      // load preset button selectors
+      const envelopeField = document.getElementById('envelope')
+      const reverbField = document.getElementById('reverb')
+      const delayField = document.getElementById('delay')
+      // append presets to DOM
       function appendPresets(res) {
         console.log(res);
         
         let presetElements = (res).map(preset => {
-          let li = document.createElement('li');
-          li.innerText = `User Preset ${preset.id} - Sustain: ${preset.envelope}, Reverb: ${preset.reverb}, Delay: ${preset.delay}`;
-          li.id = preset['id'];
-          return li;
+          let setButton = document.createElement('button');
+          let deleteButton = document.createElement('button');
+          
+          setButton.innerHTML = 'Load Preset';
+          deleteButton.innerHTML = 'Delete Preset';
+          
+          let ul = document.createElement('ul');
+          
+          ul.innerHTML = `User Preset ${preset.id}<br />`; // ~ Sustain: ${preset.envelope}, Reverb: ${preset.reverb}, Delay: ${preset.delay}<br />
+          ul.id = preset['id'];
+          
+          ul.appendChild(setButton);
+          ul.appendChild(deleteButton);
+          
+          setButton.addEventListener('click', () => {
+            envelope.value = preset.envelope;
+            reverb.value = preset.reverb;
+            delay.value = preset.delay;
+          });
+           
+          deleteButton.addEventListener('click', () => {
+             return fetch(baseUrl + preset.id, {
+                method: 'DELETE',
+              })
+            .then(res => res.json())
+            .then(res => console.log(res));
+          });
+          return ul;
         });
         presetElements.forEach(preset => presetsContainer.append(preset));
       };
@@ -138,21 +180,21 @@
       getSynths();
       // create keyboard interface
       const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-      
+      // dynamically update and concat to note html depending on the clicked note value
       let html = '';
-      
+      // this loop wrapper is used to set the number of available octaves on the keyboard interface
       for (let octave = 0; octave < 2; octave++) {
         notes.forEach((note, i) => {
-          let hasSharp = true;
           let whiteNote = notes[i];
-
+          let hasSharp = true;
+          
           if (whiteNote == 'E' || whiteNote == 'B') hasSharp = false;
           html += `<div class='whitenote'
       						onmousedown='noteDown(this, false)'
       						onmouseup='noteUp(this, false)'
       						onmouseleave='noteUp(this, false)'
                  	data-note='${note + (octave + 4)}'>`;
-
+                  // Tone.Js syntax requires an octave number next to a note
           if (hasSharp) {
             html += `<div class='blacknote'
       						onmousedown='noteDown(this, true)'
@@ -182,7 +224,7 @@
         voice1.triggerAttackRelease(note, `${envelopeGenerator}`);
         voice2.triggerAttackRelease(note, `${envelopeGenerator}`);
         // stop keyagation so accidentals dont trigger white keys
-        event.stopkeyagation();
+        event.stopPropagation();
       }
     </script>
   </body>
