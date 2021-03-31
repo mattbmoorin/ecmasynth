@@ -1,231 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine&effect=anaglyph">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.15/Tone.js"></script>
-    <title>ECMA SYNTH</title>
+    <title>ECMASYNTH</title>
   </head>
 
-  <style>
-    #presets-container {
-      position: absolute;
-      top: 0;
-      right: 0;
-      float: left;
-      display: inline;
-      margin-top: 30px;
-      margin-right: 30px;
-    }
-
-    #synth-container {
-      position: absolute;
-      margin-top: 100px;
-      height: 300px;
-      border: 5px solid black;
-      top: calc(50% - 100px);
-      left: calc(50% - 350px);
-      overflow: hidden;
-    }
-
-
-    .whitenote {
-      height: 100%;
-      width: 60px;
-      background: white;
-      float: left;
-      border-right: 1px solid rgb(0, 0, 0);
-      position: relative;
-    }
-
-    .blacknote {
-      position: absolute;
-      height: 65%;
-      width: 65%;
-      z-index: 1;
-      background: #777;
-      left: 68%;
-    }
-  </style>
-
   <body>
+    <h1>ECMASynth</h1>
+    <div><button class="button is-warning" onclick="darkMode();">Midnight Mode</button></div><br />
     <div id="synth-container"></div>
-    
+
     <form id="synth-form">
-      <label for="envelope">Sustain:</label><br />
-      <input type="text" id="envelope" value=".005"><br />
-      <button type="button" id="envelope-button">Set</button><br />
-      <label for="reverb">Reverb Decay Time *Cannot be 0*:</label><br />
-      <input type="text" id="reverb" value="10"><br />
-      <button type="button" id="reverb-button">Set</button><br />
-      <label for="delay">Delay Time *Between 0 and 1*:</label><br />
-      <input type="text" id="delay" value="0"><br />
-      <button type="button" id="delay-button">Set</button><br />
-      <input type="submit" value="Save Preset">
+      <label for="envelope">Sustain:</label>
+      <input class="column" type="text" id="envelope" value=".005">
+      <button class="button" type="button" id="envelope-button">Set</button><br />
+      <label for="reverb">Reverb Decay Time *Cannot be 0*:</label>
+      <input class="column" type="text" id="reverb" value="10">
+      <button class="button" type="button" id="reverb-button">Set</button><br />
+      <label for="delay">Delay Time *Between 0 and 1*:</label>
+      <input class="column" type="text" id="delay" value="0">
+      <button class="button" type="button" id="delay-button">Set</button><br /><br />
+      <input class="button is-primary" type="submit" value="Save Preset">
     </form>
-    
+
     <div id="presets-container"></div>
-    <script>   
-      // api url
-      const baseUrl = 'http://localhost:3000/synth'
-      // presets container
-      const presetsContainer = document.getElementById('presets-container');
-      // values for sound parameters
-      const synthForm = document.getElementById('synth-form');
-      const envelopeValue = document.getElementById('envelope');
-      const reverbValue = document.getElementById('reverb');
-      const delayValue = document.getElementById('delay');
-      // sound creation
-      const voice1 = new Tone.PolySynth(Tone.FMSynth).toDestination();
-      const voice2 = new Tone.PolySynth(Tone.AMSynth).toDestination();
-      const reverbSetting = new Tone.Reverb().toDestination();
-      const delaySetting = new Tone.FeedbackDelay(0, 0.5).toDestination();
-      // button wiring
-      const envelopeButton = document.getElementById('envelope-button');
-      const reverbButton = document.getElementById('reverb-button');
-      const delayButton = document.getElementById('delay-button');
-      
-      envelopeButton.addEventListener('click', setEnvelope);
-      delayButton.addEventListener('click', setDelay);
-      reverbButton.addEventListener('click', setReverb);
-      synthForm.addEventListener('submit', createSynth);  
-      // fx signal routing
-      let envelopeGenerator = envelopeValue.value;
-      voice1.connect(reverbSetting);
-      voice1.connect(delaySetting);
+    <script src="src/elements.js"></script>
+    <script src="src/main.js"></script>
+    <script src="src/synth.js"></script>
 
-      function setEnvelope(e) {
-        envelopeGenerator = envelopeValue.value;
-        console.log(envelopeGenerator);
-      }
-
-      function setReverb(e) {
-        reverbSetting.decay = reverbValue.value;
-        console.log(reverbSetting.decay);
-      }
-
-      function setDelay(e) {
-        delaySetting.delayTime.value = delayValue.value;
-        console.log(delaySetting.delayTime.value);
-      }
-      // save presets to api
-      function createSynth(e) {
-        e.preventDefault();
-        
-        let synth = {
-          envelope: envelope.value,
-          reverb: reverb.value,
-          delay: delay.value
-        };
-        return fetch(baseUrl, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'accept': 'application/json'
-          },
-          body: JSON.stringify(synth)
-        })
-        .then(res => res.json())
-        .then(res => console.log(res));
-      };
-      // get presets from api
-      function getSynths() {
-        return fetch(baseUrl).then(res => res.json())
-        .then(res => appendPresets(res))
-        .catch(error => console.log(error));
-      };
-      // load preset button selectors
-      const envelopeField = document.getElementById('envelope')
-      const reverbField = document.getElementById('reverb')
-      const delayField = document.getElementById('delay')
-      // append presets to DOM
-      function appendPresets(res) {
-        console.log(res);
-        
-        let presetElements = (res).map(preset => {
-          let setButton = document.createElement('button');
-          let deleteButton = document.createElement('button');
-          
-          setButton.innerHTML = 'Load Preset';
-          deleteButton.innerHTML = 'Delete Preset';
-          
-          let ul = document.createElement('ul');
-          
-          ul.innerHTML = `User Preset ${preset.id}<br />`; // ~ Sustain: ${preset.envelope}, Reverb: ${preset.reverb}, Delay: ${preset.delay}<br />
-          ul.id = preset['id'];
-          
-          ul.appendChild(setButton);
-          ul.appendChild(deleteButton);
-          
-          setButton.addEventListener('click', () => {
-            envelope.value = preset.envelope;
-            reverb.value = preset.reverb;
-            delay.value = preset.delay;
-          });
-           
-          deleteButton.addEventListener('click', () => {
-             return fetch(baseUrl + preset.id, {
-                method: 'DELETE',
-              })
-            .then(res => res.json())
-            .then(res => console.log(res));
-          });
-          return ul;
-        });
-        presetElements.forEach(preset => presetsContainer.append(preset));
-      };
-      
-      getSynths();
-      // create keyboard interface
-      const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-      // dynamically update and concat to note html depending on the clicked note value
-      let html = '';
-      // this loop wrapper is used to set the number of available octaves on the keyboard interface
-      for (let octave = 0; octave < 2; octave++) {
-        notes.forEach((note, i) => {
-          let whiteNote = notes[i];
-          let hasSharp = true;
-          
-          if (whiteNote == 'E' || whiteNote == 'B') hasSharp = false;
-          html += `<div class='whitenote'
-      						onmousedown='noteDown(this, false)'
-      						onmouseup='noteUp(this, false)'
-      						onmouseleave='noteUp(this, false)'
-                 	data-note='${note + (octave + 4)}'>`;
-                  // Tone.Js syntax requires an octave number next to a note
-          if (hasSharp) {
-            html += `<div class='blacknote'
-      						onmousedown='noteDown(this, true)'
-      						onmouseup='noteUp(this, true)'
-      						onmouseleave='noteUp(this, true)'
-                   data-note='${note + '#' + (octave + 4)}'></div>`;
-          }
-
-          html += '</div>';
-        });
-      }
-
-      document.getElementById('synth-container').innerHTML = html;
-
-      // accessing the previously declared data attribute using dataset.note
-      // turns keys different colors when pressed and then back to og color on release
-      function noteUp(element, isSharp) {
-        element.style.background = isSharp ? '#777' : 'white';
-      }
-
-      function noteDown(element, isSharp) {
-        element.style.background = isSharp ? 'black' : '#ccc';
-
-        const note = element.dataset.note;
-
-        // building envelope generators
-        voice1.triggerAttackRelease(note, `${envelopeGenerator}`);
-        voice2.triggerAttackRelease(note, `${envelopeGenerator}`);
-        // stop keyagation so accidentals dont trigger white keys
-        event.stopPropagation();
-      }
-    </script>
   </body>
+
 </html>

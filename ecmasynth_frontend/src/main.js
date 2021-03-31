@@ -5,20 +5,24 @@ delayButton.addEventListener('click', setDelay);
 reverbButton.addEventListener('click', setReverb);
 synthForm.addEventListener('submit', createSynth);
 
+function darkMode() {
+  document.body.classList.toggle('dark-mode');
+};
+
 function setEnvelope(e) {
   envelopeGenerator = envelopeValue.value;
   console.log(envelopeGenerator);
-}
+};
 
 function setReverb(e) {
   reverbSetting.decay = reverbValue.value;
   console.log(reverbSetting.decay);
-}
+};
 
 function setDelay(e) {
   delaySetting.delayTime.value = delayValue.value;
   console.log(delaySetting.delayTime.value);
-}
+};
 
 function createSynth(e) {
   e.preventDefault();
@@ -73,6 +77,10 @@ function appendProcess(preset) {
 
   loadButton.innerHTML = 'Load Preset';
   deleteButton.innerHTML = 'Delete Preset';
+
+  loadButton.className = 'button is-info'
+  deleteButton.className = 'button is-danger is-outlined'
+
 
   ul.innerHTML = `User Preset ${preset.id}<br />`;
   ul.id = preset['id'];
