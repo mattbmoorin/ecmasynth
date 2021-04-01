@@ -1,3 +1,5 @@
+drawSynthOnPage();
+
 const notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
 let html = '';
@@ -24,27 +26,29 @@ function noteDown(element, isSharp) {
   event.stopPropagation();
 };
 
-for (let octave = 0; octave < 2; octave++) {
-  notes.forEach((note, i) => {
-    let whiteNote = notes[i];
-    let hasSharp = true;
+function drawSynthOnPage {
+  for (let octave = 0; octave < 2; octave++) {
+    notes.forEach((note, i) => {
+      let whiteNote = notes[i];
+      let hasSharp = true;
 
-    if (whiteNote == 'E' || whiteNote == 'B') hasSharp = false;
-    html += `<div class='whitenote'
-    onmousedown='noteDown(this, false)'
-    onmouseup='noteUp(this, false)'
-    onmouseleave='noteUp(this, false)'
-    data-note='${note + (octave + 4)}'>`;
-    if (hasSharp) {
-      html += `<div class='blacknote'
+      if (whiteNote == 'E' || whiteNote == 'B') hasSharp = false;
+      html += `<div class='whitenote'
+      onmousedown='noteDown(this, false)'
+      onmouseup='noteUp(this, false)'
+      onmouseleave='noteUp(this, false)'
+      data-note='${note + (octave + 4)}'>`;
+      if (hasSharp) {
+        html += `<div class='blacknote'
       onmousedown='noteDown(this, true)'
       onmouseup='noteUp(this, true)'
       onmouseleave='noteUp(this, true)'
       data-note='${note + '#' + (octave + 4)}'></div>`;
-    }
+      }
 
-    html += '</div>';
-  });
-}
+      html += '</div>';
+    });
+  }
+};
 
 document.getElementById('synth-container').innerHTML = html;
