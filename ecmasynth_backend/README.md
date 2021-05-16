@@ -1,19 +1,3 @@
-# ECMASynth Backend
+# **_ECMASynth_ preset database**
 
-- A Rails backend to implement storage
-
-To do:
-
-- tweakable effects/parameters/modulation
-- save presets to database
-
-##### OR
-
-- store samples server side and have them selectable clientside
-
-###
-
-#### Extra features for down the road....
-
-- sequencer with preloaded patterns/memory banks
-- preloaded selectable samples
+_This is the back end for the ECMASYNTH synthesizer application, no problem here._
