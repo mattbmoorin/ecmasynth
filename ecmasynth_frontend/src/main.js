@@ -4,7 +4,7 @@ envelopeButton.addEventListener('click', setEnvelope);
 delayButton.addEventListener('click', setDelay);
 reverbButton.addEventListener('click', setReverb);
 synthForm.addEventListener('submit', createSynth);
-g;
+
 function darkMode() {
   document.body.classList.toggle('dark-mode');
 }
