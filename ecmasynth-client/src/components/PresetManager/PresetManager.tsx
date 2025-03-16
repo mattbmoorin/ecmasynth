@@ -416,7 +416,7 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
           />
           {showPasswordHelp && (
             <PasswordHelp>
-              Protect your preset
+              This password is used to protect your preset from being delete by someone other than you.
             </PasswordHelp>
           )}
         </FormGroup>

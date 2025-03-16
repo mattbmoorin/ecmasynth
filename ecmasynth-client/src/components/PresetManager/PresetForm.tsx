@@ -102,9 +102,16 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
 
   const createMutation = useMutation({
     mutationFn: (data: CreateSynthPresetDto) => {
+      const currentParams = JSON.parse(getPresetData());
       const presetData = {
         ...data,
-        envelope: getPresetData()
+        envelope: JSON.stringify(currentParams.envelope),
+        reverb: JSON.stringify(currentParams.reverb),
+        delay: JSON.stringify(currentParams.delay),
+        volume: JSON.stringify(currentParams.volume),
+        oscillator: JSON.stringify(currentParams.oscillator),
+        filter: JSON.stringify(currentParams.filter),
+        gainLimiter: JSON.stringify(currentParams.gainLimiter)
       };
       return api.createPreset(presetData);
     },
@@ -192,6 +199,39 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
             )}
           </FormGroup>
         )}
+        <FormGroup>
+          <Label htmlFor="oscillator">Oscillator Settings</Label>
+          <Input
+            type="text"
+            id="oscillator"
+            name="oscillator"
+            value={formData.oscillator}
+            onChange={handleChange}
+            required
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label htmlFor="filter">Filter Settings</Label>
+          <Input
+            type="text"
+            id="filter"
+            name="filter"
+            value={formData.filter}
+            onChange={handleChange}
+            required
+          />
+        </FormGroup>
+        <FormGroup>
+          <Label htmlFor="gainLimiter">Gain & Limiter Settings</Label>
+          <Input
+            type="text"
+            id="gainLimiter"
+            name="gainLimiter"
+            value={formData.gainLimiter}
+            onChange={handleChange}
+            required
+          />
+        </FormGroup>
         <FormGroup>
           <Label htmlFor="envelope">Envelope</Label>
           <Input
