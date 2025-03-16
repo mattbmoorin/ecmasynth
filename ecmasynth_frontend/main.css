@@ -1,0 +1,47 @@
+html,
+body {
+  height: 100%;
+}
+
+.dark-mode {
+  background-color: black;
+  color: white;
+}
+
+#presets-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  float: left;
+  display: inline;
+  margin-top: 30px;
+  margin-right: 30px;
+}
+
+#synth-container {
+  position: absolute;
+  margin-top: 100px;
+  height: 300px;
+  border: 5px solid black;
+  top: calc(50% - 100px);
+  left: calc(50% - 350px);
+  overflow: hidden;
+}
+
+.whitenote {
+  height: 100%;
+  width: 60px;
+  background: white;
+  float: left;
+  border-right: 1px solid rgb(0, 0, 0);
+  position: relative;
+}
+
+.blacknote {
+  position: absolute;
+  height: 65%;
+  width: 65%;
+  z-index: 1;
+  background: #777;
+  left: 68%;
+}
