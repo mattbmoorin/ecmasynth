@@ -87,6 +87,7 @@ const ErrorMessage = styled.div`
 
 const FormGroup = styled.div`
   margin-bottom: 1rem;
+  position: relative;
 `;
 
 const Label = styled.label`
@@ -95,7 +96,6 @@ const Label = styled.label`
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  position: relative;
 `;
 
 const InfoIcon = styled.span`
@@ -120,12 +120,10 @@ const InfoIcon = styled.span`
 
 const PasswordHelp = styled.div`
   position: absolute;
-  top: 100%;
+  top: calc(100% - 1rem);
   left: 0;
-  right: 0;
   font-size: 0.8rem;
   color: #aaa;
-  margin-top: 0.25rem;
   padding: 8px 12px;
   background: #333;
   border-radius: 4px;
@@ -253,6 +251,9 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
         reverb: JSON.stringify(currentParams.reverb),
         delay: JSON.stringify(currentParams.delay),
         volume: JSON.stringify(currentParams.volume),
+        oscillator: JSON.stringify(currentParams.oscillator),
+        filter: JSON.stringify(currentParams.filter),
+        gainLimiter: JSON.stringify(currentParams.gainLimiter),
         deletionPassword: formData.deletionPassword
       };
 
@@ -272,7 +273,20 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
         envelope: JSON.parse(preset.envelope),
         reverb: JSON.parse(preset.reverb),
         delay: JSON.parse(preset.delay),
-        volume: { level: -12 } // Default volume level when loading old presets
+        volume: { level: -12 }, // Default volume level when loading old presets
+        // Add new parameters with default values for backward compatibility
+        oscillator: {
+          count: 2,
+          spread: 15
+        },
+        filter: {
+          frequency: 2000,
+          rolloff: -24
+        },
+        gainLimiter: {
+          gain: 0.5,
+          threshold: -12
+        }
       };
       onLoadPreset(params);
       setError(null);
@@ -287,7 +301,17 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
 
   const handleDeleteConfirm = async (password: string) => {
     if (!presetToDelete) return;
-    await deleteMutation.mutateAsync({ id: presetToDelete.id, password });
+    if (!password.trim()) {
+      throw new Error('Please enter the deletion password');
+    }
+    try {
+      await deleteMutation.mutateAsync({ id: presetToDelete.id, password });
+    } catch (err) {
+      if (err instanceof Error && err.message.includes('403')) {
+        throw new Error('Incorrect deletion password');
+      }
+      throw err;
+    }
   };
 
   const handlePresetNameChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -387,13 +411,12 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
             id="deletionPassword"
             value={formData.deletionPassword}
             onChange={handlePasswordChange}
-            placeholder="Enter a password to protect your preset"
+            placeholder="Protect your preset"
             required
           />
           {showPasswordHelp && (
             <PasswordHelp>
-              This password will be required when you want to delete this preset later.
-              Make sure to remember it! This is the only way to delete your preset.
+              Protect your preset
             </PasswordHelp>
           )}
         </FormGroup>

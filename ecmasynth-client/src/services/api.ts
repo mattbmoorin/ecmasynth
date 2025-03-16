@@ -218,9 +218,13 @@ export const api = {
   deletePreset: async (id: number, password: string): Promise<void> => {
     try {
       checkRateLimits();
-      await axiosInstance.delete(`/synthpresets/${id}`, {
+      const response = await axiosInstance.delete(`/synthpresets/${id}`, {
         data: { password }
       });
+
+      if (response.status === 403) {
+        throw new ApiError('Incorrect deletion password', 403);
+      }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 403) {
         throw new ApiError('Incorrect deletion password', 403);

@@ -76,6 +76,9 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
     reverb: preset?.reverb || '',
     delay: preset?.delay || '',
     volume: preset?.volume || JSON.stringify({ level: -12 }),
+    oscillator: preset?.oscillator || JSON.stringify({ count: 2, spread: 15 }),
+    filter: preset?.filter || JSON.stringify({ frequency: 2000, rolloff: -24 }),
+    gainLimiter: preset?.gainLimiter || JSON.stringify({ gain: 0.5, threshold: -12 }),
     deletionPassword: ''
   });
 
@@ -114,6 +117,9 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
         reverb: '',
         delay: '',
         volume: JSON.stringify({ level: -12 }),
+        oscillator: JSON.stringify({ count: 2, spread: 15 }),
+        filter: JSON.stringify({ frequency: 2000, rolloff: -24 }),
+        gainLimiter: JSON.stringify({ gain: 0.5, threshold: -12 }),
         deletionPassword: ''
       });
     }

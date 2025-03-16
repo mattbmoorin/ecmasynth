@@ -32,6 +32,12 @@ export interface SynthPreset {
     delay: string;
     /** Serialized volume parameters */
     volume: string;
+    /** Serialized oscillator parameters */
+    oscillator: string;
+    /** Serialized filter parameters */
+    filter: string;
+    /** Serialized gain and limiter parameters */
+    gainLimiter: string;
     /** ISO timestamp of creation */
     readonly createdAt: string;
     /** ISO timestamp of last update */
@@ -98,6 +104,36 @@ export interface DelayParams {
 }
 
 /**
+ * Oscillator parameters
+ */
+export interface OscillatorParams {
+    /** Number of oscillator voices (1-8) */
+    count: number;
+    /** Detune spread between voices in cents (0-100) */
+    spread: number;
+}
+
+/**
+ * Filter parameters
+ */
+export interface FilterParams {
+    /** Filter cutoff frequency in Hz (20-20000) */
+    frequency: number;
+    /** Filter rolloff in dB/oct (-12, -24, -48, -96) */
+    rolloff: number;
+}
+
+/**
+ * Gain and limiter parameters
+ */
+export interface GainLimiterParams {
+    /** Gain level (0-1) */
+    gain: number;
+    /** Limiter threshold in dB (-60-0) */
+    threshold: number;
+}
+
+/**
  * Complete set of synthesizer parameters
  */
 export interface SynthParams {
@@ -109,6 +145,12 @@ export interface SynthParams {
     delay: DelayParams;
     /** Volume parameters */
     volume: VolumeParams;
+    /** Oscillator parameters */
+    oscillator: OscillatorParams;
+    /** Filter parameters */
+    filter: FilterParams;
+    /** Gain and limiter parameters */
+    gainLimiter: GainLimiterParams;
 }
 
 /**
@@ -123,7 +165,7 @@ export const PARAM_RANGES = {
     },
     reverb: {
         wet: { min: 0, max: 1, step: 0.01 },
-        decay: { min: 0, max: 10, step: 0.1 },
+        decay: { min: 0.01, max: 10, step: 0.1 },
         preDelay: { min: 0, max: 0.1, step: 0.001 }
     },
     delay: {
@@ -133,31 +175,54 @@ export const PARAM_RANGES = {
     },
     volume: {
         level: { min: -60, max: 0, step: 0.01 }
+    },
+    oscillator: {
+        count: { min: 1, max: 8, step: 1 },
+        spread: { min: 0, max: 100, step: 1 }
+    },
+    filter: {
+        frequency: { min: 20, max: 20000, step: 1 },
+        rolloff: { min: -96, max: -12, step: 12 }
+    },
+    gainLimiter: {
+        gain: { min: 0, max: 1, step: 0.01 },
+        threshold: { min: -60, max: 0, step: 1 }
     }
 } as const;
 
 /**
  * Default synthesizer parameters
- * These values provide a balanced starting point for the synthesizer
  */
 export const defaultSynthParams: Readonly<SynthParams> = {
     envelope: {
-        attack: 0.1,   // 100ms attack
-        decay: 0.2,    // 200ms decay
-        sustain: 0.5,  // 50% sustain level
-        release: 0.5   // 500ms release
+        attack: 0.1,
+        decay: 0.2,
+        sustain: 0.5,
+        release: 0.5
     },
     reverb: {
-        wet: 0.3,      // 30% wet mix
-        decay: 1.5,    // 1.5s decay time
-        preDelay: 0.01 // 10ms pre-delay
+        wet: 0.3,
+        decay: 1.5,
+        preDelay: 0.01
     },
     delay: {
-        wet: 0.3,      // 30% wet mix
-        delayTime: 0.25, // 250ms delay time
-        feedback: 0.3    // 30% feedback
+        wet: 0.3,
+        delayTime: 0.25,
+        feedback: 0.3
     },
     volume: {
-        level: 0    // 0dB volume level
+        level: 0
+    },
+    oscillator: {
+        count: 2,
+        spread: 15
+    },
+    filter: {
+        frequency: 2000,
+        rolloff: -24
+    },
+    gainLimiter: {
+        gain: 0.5,
+        threshold: -12
     }
 } as const; 
