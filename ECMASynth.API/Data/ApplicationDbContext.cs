@@ -17,10 +17,6 @@ namespace ECMASynth.API.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<SynthPreset>()
-                .Property(p => p.Name)
-                .IsRequired();
-
-            modelBuilder.Entity<SynthPreset>()
                 .Property(p => p.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ECMASynth.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e2b1549200b320930e476d7a91c2925ad74a966d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+47fb803315df0d749ac08899bcffaca169b2bfe4")]
 [assembly: System.Reflection.AssemblyProductAttribute("ECMASynth.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ECMASynth.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

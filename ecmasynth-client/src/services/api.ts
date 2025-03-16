@@ -118,26 +118,23 @@ function validatePresetData(preset: CreateSynthPresetDto) {
  */
 export const api = {
   /**
-   * Retrieve all synthesizer presets
-   * @returns Array of synthesizer presets
-   * @throws {ApiError} If the request fails or rate limit is exceeded
+   * Get all synthesizer presets
+   * @returns {Promise<SynthPreset[]>} Array of presets
+   * @throws {ApiError} If the request fails
    */
   getPresets: async (): Promise<SynthPreset[]> => {
     try {
-      checkRateLimits();
-      const response: AxiosResponse = await axiosInstance.get('/synthpresets');
-      if (!Array.isArray(response.data)) {
-        throw new ApiError('Invalid response format: expected array of presets');
-      }
-
-      // Check if user has hit preset limit
-      if (response.data.length >= PROTECTION_CONFIG.maxPresetsPerUser) {
-        throw new ApiError(`Maximum number of presets (${PROTECTION_CONFIG.maxPresetsPerUser}) reached`, 403);
-      }
-
+      const response = await axiosInstance.get('/synthpresets');
       return response.data;
     } catch (error) {
-      return handleApiError(error);
+      if (axios.isAxiosError(error)) {
+        throw new ApiError(
+          error.response?.data?.message || 'Failed to fetch presets',
+          error.response?.status,
+          error.response?.data
+        );
+      }
+      throw error;
     }
   },
 
@@ -162,36 +159,22 @@ export const api = {
   /**
    * Create a new synthesizer preset
    * @param preset - The preset data to create
-   * @returns The created preset with its assigned ID
-   * @throws {ApiError} If the creation fails, validation fails, or rate limit is exceeded
+   * @returns {Promise<SynthPreset>} The created preset
+   * @throws {ApiError} If the creation fails
    */
   createPreset: async (preset: CreateSynthPresetDto): Promise<SynthPreset> => {
     try {
-      checkRateLimits();
-
-      // Check time since last create
-      const now = Date.now();
-      if (now - lastCreateTime < PROTECTION_CONFIG.minTimeBetweenCreates) {
-        throw new ApiError('Please wait before creating another preset', 429);
-      }
-      lastCreateTime = now;
-
-      // Validate preset data
-      validatePresetData(preset);
-
-      // Check total number of presets
-      const existingPresets = await api.getPresets();
-      if (existingPresets.length >= PROTECTION_CONFIG.maxPresetsPerUser) {
-        throw new ApiError(`Maximum number of presets (${PROTECTION_CONFIG.maxPresetsPerUser}) reached`, 403);
-      }
-
-      const response: AxiosResponse = await axiosInstance.post('/synthpresets', preset);
-      if (!isValidResponse<SynthPreset>(response.data)) {
-        throw new ApiError('Invalid response format: expected created preset object');
-      }
+      const response = await axiosInstance.post('/synthpresets', preset);
       return response.data;
     } catch (error) {
-      return handleApiError(error);
+      if (axios.isAxiosError(error)) {
+        throw new ApiError(
+          error.response?.data?.message || 'Failed to create preset',
+          error.response?.status,
+          error.response?.data
+        );
+      }
+      throw error;
     }
   },
 
@@ -212,24 +195,20 @@ export const api = {
   /**
    * Delete a synthesizer preset
    * @param id - The ID of the preset to delete
-   * @param password - The password required for deletion
-   * @throws {ApiError} If the deletion fails, preset is not found, or password is incorrect
+   * @throws {ApiError} If the deletion fails or preset is not found
    */
-  deletePreset: async (id: number, password: string): Promise<void> => {
+  deletePreset: async (id: number): Promise<void> => {
     try {
-      checkRateLimits();
-      const response = await axiosInstance.delete(`/synthpresets/${id}`, {
-        data: { password }
-      });
-
-      if (response.status === 403) {
-        throw new ApiError('Incorrect deletion password', 403);
-      }
+      await axiosInstance.delete(`/synthpresets/${id}`);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 403) {
-        throw new ApiError('Incorrect deletion password', 403);
+      if (axios.isAxiosError(error)) {
+        throw new ApiError(
+          error.response?.data?.message || 'Failed to delete preset',
+          error.response?.status,
+          error.response?.data
+        );
       }
-      handleApiError(error);
+      throw error;
     }
   }
 }; 

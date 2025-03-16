@@ -25,9 +25,15 @@ class VoiceWithEffects extends Tone.Synth {
     super({
       ...options,
       oscillator: {
-        type: 'fatsawtooth8',
+        type: 'fatsawtooth',
         count: 2,
         spread: 15
+      },
+      envelope: {
+        attack: 0.005,
+        decay: 0.1,
+        sustain: 0.3,
+        release: 0.1
       },
       volume: 5 
     });
@@ -36,7 +42,8 @@ class VoiceWithEffects extends Tone.Synth {
     this.filter = new Tone.Filter({
       type: 'lowpass',
       frequency: 2000,
-      rolloff: -24
+      rolloff: -24,
+      Q: 1
     });
 
     this.gain = new Tone.Gain(0.5);
@@ -65,18 +72,14 @@ class VoiceWithEffects extends Tone.Synth {
     // Disconnect the default output
     this.disconnect();
 
-    // Connect the oscillator to the filter through the gain
+    // Connect the effects chain
     this.connect(this.gain);
     this.gain.connect(this.filter);
-    
-    // Chain the effects together
-    this.filter.chain(
-      this.delay,
-      this.reverb,
-      this.limiter,
-      this.voiceChannel,
-      Tone.Destination
-    );
+    this.filter.connect(this.delay);
+    this.delay.connect(this.reverb);
+    this.reverb.connect(this.limiter);
+    this.limiter.connect(this.voiceChannel);
+    this.voiceChannel.connect(Tone.Destination);
   }
 
   // Update effect parameters for this voice
@@ -94,14 +97,53 @@ class VoiceWithEffects extends Tone.Synth {
       preDelay: params.reverb.preDelay,
       wet: params.reverb.wet * wetScale
     });
-
-    this.filter.frequency.value = 2000 + (params.envelope.attack * 2000);
   }
 
   // Update volume for this voice
   updateVolume(value: number) {
     const scaledValue = Math.min(value, 0);
     this.voiceChannel.volume.value = scaledValue;
+  }
+
+  // Update oscillator parameters
+  updateOscillator(params: { count: number; spread: number }) {
+    const validCount = Math.max(1, Math.min(8, Math.round(params.count)));
+    const validSpread = Math.max(0, Math.min(50, params.spread));
+
+    // Update the existing oscillator settings
+    this.set({
+      oscillator: {
+        type: 'fatsawtooth',
+        count: validCount,
+        spread: validSpread
+      }
+    });
+
+    console.log('Updated oscillator:', { count: validCount, spread: validSpread });
+  }
+
+  // Update filter parameters
+  updateFilter(params: { frequency: number; rolloff: -12 | -24 | -48 | -96 }) {
+    // Use exponential scaling for frequency (better for audio)
+    const minFreq = 20;
+    const maxFreq = 20000;
+    const freqScale = Math.log2(maxFreq / minFreq);
+    const normalizedFreq = minFreq * Math.pow(2, (params.frequency / maxFreq) * freqScale);
+    
+    this.filter.set({
+      frequency: normalizedFreq,
+      rolloff: params.rolloff,
+      Q: 2 // Increased resonance for more pronounced filtering
+    });
+
+    // Debug log to verify frequency values
+    console.log('Filter frequency:', normalizedFreq);
+  }
+
+  // Update gain and limiter parameters
+  updateGainAndLimiter(params: { gain: number; threshold: number }) {
+    this.gain.gain.value = params.gain;
+    this.limiter.threshold.value = params.threshold;
   }
 
   // Clean up voice resources
@@ -262,9 +304,45 @@ const Synthesizer: React.FC<SynthesizerProps> = ({
         });
       }
 
+      // Update oscillator parameters
+      if (category === 'oscillator' && synthRef.current) {
+        const voices = (synthRef.current as any)._voices as VoiceWithEffects[];
+        voices.forEach(voice => {
+          voice.updateOscillator(newParams.oscillator);
+        });
+      }
+
+      // Update filter parameters
+      if (category === 'filter' && synthRef.current) {
+        const voices = (synthRef.current as any)._voices as VoiceWithEffects[];
+        // Ensure rolloff is one of the valid values
+        const validRolloffs = [-12, -24, -48, -96] as const;
+        const rolloff = validRolloffs.reduce((prev, curr) => 
+          Math.abs(curr - newParams.filter.rolloff) < Math.abs(prev - newParams.filter.rolloff) ? curr : prev
+        ) as -12 | -24 | -48 | -96;
+        
+        voices.forEach(voice => {
+          voice.updateFilter({
+            frequency: newParams.filter.frequency,
+            rolloff
+          });
+        });
+      }
+
+      // Update gain and limiter parameters
+      if (category === 'gainLimiter' && synthRef.current) {
+        const voices = (synthRef.current as any)._voices as VoiceWithEffects[];
+        voices.forEach(voice => {
+          voice.updateGainAndLimiter(newParams.gainLimiter);
+        });
+      }
+
+      // Notify parent component if callback exists
+      onParamsChange?.(newParams);
+
       return newParams;
     });
-  }, []);
+  }, [onParamsChange]);
 
   return (
     <SynthesizerContainer>

@@ -43,7 +43,19 @@ namespace ECMASynth.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Filter")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("GainLimiter")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Oscillator")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -55,6 +67,10 @@ namespace ECMASynth.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Volume")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

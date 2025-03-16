@@ -20,7 +20,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { SynthPreset, SynthParams, CreateSynthPresetDto } from '../../types/synth.types';
 import Modal from '../common/Modal';
-import DeletePresetDialog from './DeletePresetDialog';
 import { Button, Input } from '../common/styles';
 
 // Theme constants
@@ -70,6 +69,24 @@ const PresetItem = styled.div`
   &:hover {
     background: ${THEME.colors.background.hover};
   }
+`;
+
+const PresetInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const PresetName = styled.h3`
+  margin: 0;
+`;
+
+const PresetDate = styled.small`
+  color: #666;
+`;
+
+const PresetActions = styled.div`
+  display: flex;
+  gap: ${THEME.spacing.medium};
 `;
 
 const ModalButtons = styled.div`
@@ -135,6 +152,31 @@ const PasswordHelp = styled.div`
   line-height: 1.4;
 `;
 
+const DialogOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const DialogContent = styled.div`
+  background: #2a2a2a;
+  padding: 20px;
+  border-radius: 8px;
+  min-width: 300px;
+  color: white;
+
+  h2 {
+    margin-top: 0;
+  }
+`;
+
 interface PresetManagerProps {
   /** Current synthesizer parameters */
   currentParams: SynthParams;
@@ -151,11 +193,8 @@ interface PresetManagerProps {
 const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPreset }) => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [presetToDelete, setPresetToDelete] = useState<SynthPreset | null>(null);
   const [presetName, setPresetName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [showPasswordHelp, setShowPasswordHelp] = useState(false);
-  const [formData, setFormData] = useState({ deletionPassword: '' });
 
   // Query for fetching presets
   const { data: presets = [], isLoading, isError } = useQuery<SynthPreset[]>({
@@ -175,13 +214,11 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
       await queryClient.cancelQueries({ queryKey: ['presets'] });
       const previousPresets = queryClient.getQueryData<SynthPreset[]>(['presets']) ?? [];
 
-      // Note: This is just for optimistic UI updates, the actual hash will be generated server-side
       const tempPreset: SynthPreset = {
         id: Date.now(),
         ...newPreset,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        deletionHash: 'pending' // Temporary value, will be replaced by server response
+        updatedAt: new Date().toISOString()
       };
 
       queryClient.setQueryData<SynthPreset[]>(['presets'], (old = []) => [...old, tempPreset]);
@@ -205,38 +242,13 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
   });
 
   // Mutation for deleting presets
-  const deleteMutation = useMutation<
-    void,
-    Error,
-    { id: number; password: string },
-    { previousPresets: SynthPreset[] }
-  >({
-    mutationFn: ({ id, password }) => api.deletePreset(id, password),
-    onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: ['presets'] });
-      const previousPresets = queryClient.getQueryData<SynthPreset[]>(['presets']) ?? [];
-
-      queryClient.setQueryData<SynthPreset[]>(['presets'], (old = []) =>
-        old.filter(preset => preset.id !== id)
-      );
-
-      return { previousPresets };
-    },
-    onError: (_err, _vars, context) => {
-      if (context) {
-        queryClient.setQueryData(['presets'], context.previousPresets);
-      }
-    },
-    onSettled: () => {
+  const deleteMutation = useMutation<void, Error, number>({
+    mutationFn: api.deletePreset,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['presets'] });
-      setPresetToDelete(null);
     }
   });
 
-  /**
-   * Handles saving a new preset
-   * Validates input and creates a new preset with current parameters
-   */
   const handleSavePreset = useCallback(() => {
     setError(null);
     if (!presetName.trim()) {
@@ -253,40 +265,25 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
         volume: JSON.stringify(currentParams.volume),
         oscillator: JSON.stringify(currentParams.oscillator),
         filter: JSON.stringify(currentParams.filter),
-        gainLimiter: JSON.stringify(currentParams.gainLimiter),
-        deletionPassword: formData.deletionPassword
+        gainLimiter: JSON.stringify(currentParams.gainLimiter)
       };
 
       createMutation.mutate(presetData);
     } catch (err) {
       setError('Failed to prepare preset data');
     }
-  }, [presetName, currentParams, createMutation, formData.deletionPassword]);
+  }, [presetName, currentParams, createMutation]);
 
-  /**
-   * Handles loading a preset
-   * Parses the preset data and updates the synthesizer parameters
-   */
   const handleLoadPreset = useCallback((preset: SynthPreset) => {
     try {
       const params: SynthParams = {
         envelope: JSON.parse(preset.envelope),
         reverb: JSON.parse(preset.reverb),
         delay: JSON.parse(preset.delay),
-        volume: { level: -12 }, // Default volume level when loading old presets
-        // Add new parameters with default values for backward compatibility
-        oscillator: {
-          count: 2,
-          spread: 15
-        },
-        filter: {
-          frequency: 2000,
-          rolloff: -24
-        },
-        gainLimiter: {
-          gain: 0.5,
-          threshold: -12
-        }
+        volume: JSON.parse(preset.volume),
+        oscillator: JSON.parse(preset.oscillator),
+        filter: JSON.parse(preset.filter),
+        gainLimiter: JSON.parse(preset.gainLimiter)
       };
       onLoadPreset(params);
       setError(null);
@@ -295,31 +292,14 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
     }
   }, [onLoadPreset]);
 
-  const handleDeleteClick = (preset: SynthPreset) => {
-    setPresetToDelete(preset);
-  };
-
-  const handleDeleteConfirm = async (password: string) => {
-    if (!presetToDelete) return;
-    if (!password.trim()) {
-      throw new Error('Please enter the deletion password');
-    }
-    try {
-      await deleteMutation.mutateAsync({ id: presetToDelete.id, password });
-    } catch (err) {
-      if (err instanceof Error && err.message.includes('403')) {
-        throw new Error('Incorrect deletion password');
-      }
-      throw err;
+  const handleDeletePreset = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this preset?')) {
+      deleteMutation.mutate(id);
     }
   };
 
   const handlePresetNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     setPresetName(e.target.value);
-  };
-
-  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, deletionPassword: e.target.value }));
   };
 
   if (isLoading) {
@@ -334,46 +314,26 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
 
   return (
     <Container>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Synth Presets</h2>
-        <Button 
-          variant="primary" 
-          onClick={() => setIsModalOpen(true)}
-          disabled={createMutation.isPending}
-        >
-          Save Current Settings
-        </Button>
-      </div>
-
+      <Button onClick={() => setIsModalOpen(true)}>Save Current Settings</Button>
+      
       <PresetList>
-        {presets.map((preset: SynthPreset) => (
+        {presets.map(preset => (
           <PresetItem key={preset.id}>
-            <div>
-              <h3>{preset.name}</h3>
-              <small>Created: {new Date(preset.createdAt).toLocaleDateString()}</small>
-            </div>
-            <div>
-              <Button 
-                onClick={() => handleLoadPreset(preset)}
-                disabled={deleteMutation.isPending}
-              >
-                Load
-              </Button>
+            <PresetInfo>
+              <PresetName>{preset.name}</PresetName>
+              <PresetDate>Created: {new Date(preset.createdAt).toLocaleDateString()}</PresetDate>
+            </PresetInfo>
+            <PresetActions>
+              <Button onClick={() => handleLoadPreset(preset)}>Load</Button>
               <Button 
                 variant="danger"
-                onClick={() => handleDeleteClick(preset)}
-                disabled={deleteMutation.isPending}
+                onClick={() => handleDeletePreset(preset.id)}
               >
                 Delete
               </Button>
-            </div>
+            </PresetActions>
           </PresetItem>
         ))}
-        {presets.length === 0 && (
-          <div style={{ textAlign: 'center', padding: THEME.spacing.xlarge }}>
-            No presets saved yet.
-          </div>
-        )}
       </PresetList>
 
       <Modal
@@ -396,30 +356,6 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
             required
           />
         </FormGroup>
-        <FormGroup>
-          <Label htmlFor="deletionPassword">
-            Deletion Password
-            <InfoIcon 
-              onMouseEnter={() => setShowPasswordHelp(true)}
-              onMouseLeave={() => setShowPasswordHelp(false)}
-            >
-              ⓘ
-            </InfoIcon>
-          </Label>
-          <Input
-            type="password"
-            id="deletionPassword"
-            value={formData.deletionPassword}
-            onChange={handlePasswordChange}
-            placeholder="Protect your preset"
-            required
-          />
-          {showPasswordHelp && (
-            <PasswordHelp>
-              This password is used to protect your preset from being delete by someone other than you.
-            </PasswordHelp>
-          )}
-        </FormGroup>
         {error && <ErrorMessage>{error}</ErrorMessage>}
         <ModalButtons>
           <Button onClick={() => {
@@ -438,14 +374,6 @@ const PresetManager: React.FC<PresetManagerProps> = ({ currentParams, onLoadPres
           </Button>
         </ModalButtons>
       </Modal>
-
-      {presetToDelete && (
-        <DeletePresetDialog
-          presetName={presetToDelete.name}
-          onConfirm={handleDeleteConfirm}
-          onCancel={() => setPresetToDelete(null)}
-        />
-      )}
     </Container>
   );
 };

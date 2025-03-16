@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../services/api';
-import { CreateSynthPresetDto, SynthPreset } from '../../types/synth.types';
+import { 
+  CreateSynthPresetDto, 
+  SynthPreset, 
+  OscillatorParams,
+  FilterParams,
+  GainLimiterParams,
+  PARAM_RANGES 
+} from '../../types/synth.types';
 
 const FormContainer = styled.div`
   padding: 20px;
@@ -62,13 +69,66 @@ const Button = styled.button`
   }
 `;
 
+const RangeInput = styled.input`
+  width: 100%;
+  margin: 8px 0;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #4a4a4a;
+  border-radius: 2px;
+  outline: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #4CAF50;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+`;
+
+const ControlRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 5px 0;
+`;
+
+const ValueDisplay = styled.span`
+  min-width: 60px;
+  text-align: right;
+  font-size: 14px;
+  color: #aaa;
+`;
+
 interface PresetFormProps {
   preset?: SynthPreset;
   onSuccess?: () => void;
   getPresetData: () => string;
+  onParamChange?: (params: Partial<{
+    oscillator: OscillatorParams;
+    filter: FilterParams;
+    gainLimiter: GainLimiterParams;
+  }>) => void;
 }
 
-const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetData }) => {
+const PresetForm: React.FC<PresetFormProps> = ({ 
+  preset, 
+  onSuccess, 
+  getPresetData,
+  onParamChange 
+}) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<CreateSynthPresetDto>({
     name: preset?.name || '',
@@ -78,27 +138,35 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
     volume: preset?.volume || JSON.stringify({ level: -12 }),
     oscillator: preset?.oscillator || JSON.stringify({ count: 2, spread: 15 }),
     filter: preset?.filter || JSON.stringify({ frequency: 2000, rolloff: -24 }),
-    gainLimiter: preset?.gainLimiter || JSON.stringify({ gain: 0.5, threshold: -12 }),
-    deletionPassword: ''
+    gainLimiter: preset?.gainLimiter || JSON.stringify({ gain: 0.5, threshold: -12 })
   });
 
-  const [showPasswordHelp, setShowPasswordHelp] = useState(false);
+  const [oscillatorParams, setOscillatorParams] = useState<OscillatorParams>(
+    JSON.parse(formData.oscillator)
+  );
+  const [filterParams, setFilterParams] = useState<FilterParams>(
+    JSON.parse(formData.filter)
+  );
+  const [gainLimiterParams, setGainLimiterParams] = useState<GainLimiterParams>(
+    JSON.parse(formData.gainLimiter)
+  );
 
-  const PasswordHelp = styled.div`
-    font-size: 12px;
-    color: #aaa;
-    margin-top: 4px;
-    line-height: 1.4;
-  `;
+  useEffect(() => {
+    // Update form data when params change
+    setFormData(prev => ({
+      ...prev,
+      oscillator: JSON.stringify(oscillatorParams),
+      filter: JSON.stringify(filterParams),
+      gainLimiter: JSON.stringify(gainLimiterParams)
+    }));
 
-  const InfoIcon = styled.span`
-    cursor: help;
-    margin-left: 6px;
-    color: #888;
-    &:hover {
-      color: #aaa;
-    }
-  `;
+    // Notify parent component of parameter changes
+    onParamChange?.({
+      oscillator: oscillatorParams,
+      filter: filterParams,
+      gainLimiter: gainLimiterParams
+    });
+  }, [oscillatorParams, filterParams, gainLimiterParams, onParamChange]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateSynthPresetDto) => {
@@ -126,8 +194,7 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
         volume: JSON.stringify({ level: -12 }),
         oscillator: JSON.stringify({ count: 2, spread: 15 }),
         filter: JSON.stringify({ frequency: 2000, rolloff: -24 }),
-        gainLimiter: JSON.stringify({ gain: 0.5, threshold: -12 }),
-        deletionPassword: ''
+        gainLimiter: JSON.stringify({ gain: 0.5, threshold: -12 })
       });
     }
   });
@@ -156,6 +223,33 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
     }));
   };
 
+  const handleParamChange = (
+    section: 'oscillator' | 'filter' | 'gainLimiter',
+    param: string,
+    value: number
+  ) => {
+    switch (section) {
+      case 'oscillator':
+        setOscillatorParams(prev => ({ ...prev, [param]: value }));
+        break;
+      case 'filter':
+        if (param === 'rolloff') {
+          // Ensure rolloff is one of: -12, -24, -48, -96
+          const validRolloffs = [-12, -24, -48, -96];
+          const closestRolloff = validRolloffs.reduce((prev, curr) => 
+            Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+          );
+          setFilterParams(prev => ({ ...prev, rolloff: closestRolloff }));
+        } else {
+          setFilterParams(prev => ({ ...prev, [param]: value }));
+        }
+        break;
+      case 'gainLimiter':
+        setGainLimiterParams(prev => ({ ...prev, [param]: value }));
+        break;
+    }
+  };
+
   return (
     <FormContainer>
       <h2>{preset ? 'Edit Preset' : 'Create New Preset'}</h2>
@@ -171,66 +265,92 @@ const PresetForm: React.FC<PresetFormProps> = ({ preset, onSuccess, getPresetDat
             required
           />
         </FormGroup>
-        {!preset && (
-          <FormGroup>
-            <Label htmlFor="deletionPassword">
-              Deletion Password
-              <InfoIcon 
-                onMouseEnter={() => setShowPasswordHelp(true)}
-                onMouseLeave={() => setShowPasswordHelp(false)}
-              >
-                ⓘ
-              </InfoIcon>
-            </Label>
-            <Input
-              type="password"
-              id="deletionPassword"
-              name="deletionPassword"
-              value={formData.deletionPassword}
-              onChange={handleChange}
-              required={!preset}
-              placeholder="Enter a password to protect your preset"
+        <FormGroup>
+          <Label>Oscillator Settings</Label>
+          <ControlRow>
+            <Label htmlFor="osc-count">Count:</Label>
+            <RangeInput
+              type="range"
+              id="osc-count"
+              min={PARAM_RANGES.oscillator.count.min}
+              max={PARAM_RANGES.oscillator.count.max}
+              step={PARAM_RANGES.oscillator.count.step}
+              value={oscillatorParams.count}
+              onChange={(e) => handleParamChange('oscillator', 'count', parseInt(e.target.value))}
             />
-            {showPasswordHelp && (
-              <PasswordHelp>
-                This password will be required when you want to delete this preset later.
-                Make sure to remember it! This is the only way to delete your preset.
-              </PasswordHelp>
-            )}
-          </FormGroup>
-        )}
-        <FormGroup>
-          <Label htmlFor="oscillator">Oscillator Settings</Label>
-          <Input
-            type="text"
-            id="oscillator"
-            name="oscillator"
-            value={formData.oscillator}
-            onChange={handleChange}
-            required
-          />
+            <ValueDisplay>{oscillatorParams.count}</ValueDisplay>
+          </ControlRow>
+          <ControlRow>
+            <Label htmlFor="osc-spread">Spread:</Label>
+            <RangeInput
+              type="range"
+              id="osc-spread"
+              min={PARAM_RANGES.oscillator.spread.min}
+              max={PARAM_RANGES.oscillator.spread.max}
+              step={PARAM_RANGES.oscillator.spread.step}
+              value={oscillatorParams.spread}
+              onChange={(e) => handleParamChange('oscillator', 'spread', parseInt(e.target.value))}
+            />
+            <ValueDisplay>{oscillatorParams.spread}¢</ValueDisplay>
+          </ControlRow>
         </FormGroup>
         <FormGroup>
-          <Label htmlFor="filter">Filter Settings</Label>
-          <Input
-            type="text"
-            id="filter"
-            name="filter"
-            value={formData.filter}
-            onChange={handleChange}
-            required
-          />
+          <Label>Filter Settings</Label>
+          <ControlRow>
+            <Label htmlFor="filter-freq">Frequency:</Label>
+            <RangeInput
+              type="range"
+              id="filter-freq"
+              min={PARAM_RANGES.filter.frequency.min}
+              max={PARAM_RANGES.filter.frequency.max}
+              step={PARAM_RANGES.filter.frequency.step}
+              value={filterParams.frequency}
+              onChange={(e) => handleParamChange('filter', 'frequency', parseFloat(e.target.value))}
+            />
+            <ValueDisplay>{filterParams.frequency}Hz</ValueDisplay>
+          </ControlRow>
+          <ControlRow>
+            <Label htmlFor="filter-rolloff">Rolloff:</Label>
+            <RangeInput
+              type="range"
+              id="filter-rolloff"
+              min={PARAM_RANGES.filter.rolloff.min}
+              max={PARAM_RANGES.filter.rolloff.max}
+              step={PARAM_RANGES.filter.rolloff.step}
+              value={filterParams.rolloff}
+              onChange={(e) => handleParamChange('filter', 'rolloff', parseFloat(e.target.value))}
+            />
+            <ValueDisplay>{filterParams.rolloff}dB/oct</ValueDisplay>
+          </ControlRow>
         </FormGroup>
         <FormGroup>
-          <Label htmlFor="gainLimiter">Gain & Limiter Settings</Label>
-          <Input
-            type="text"
-            id="gainLimiter"
-            name="gainLimiter"
-            value={formData.gainLimiter}
-            onChange={handleChange}
-            required
-          />
+          <Label>Gain & Limiter Settings</Label>
+          <ControlRow>
+            <Label htmlFor="gain">Gain:</Label>
+            <RangeInput
+              type="range"
+              id="gain"
+              min={PARAM_RANGES.gainLimiter.gain.min}
+              max={PARAM_RANGES.gainLimiter.gain.max}
+              step={PARAM_RANGES.gainLimiter.gain.step}
+              value={gainLimiterParams.gain}
+              onChange={(e) => handleParamChange('gainLimiter', 'gain', parseFloat(e.target.value))}
+            />
+            <ValueDisplay>{(gainLimiterParams.gain * 100).toFixed(0)}%</ValueDisplay>
+          </ControlRow>
+          <ControlRow>
+            <Label htmlFor="threshold">Threshold:</Label>
+            <RangeInput
+              type="range"
+              id="threshold"
+              min={PARAM_RANGES.gainLimiter.threshold.min}
+              max={PARAM_RANGES.gainLimiter.threshold.max}
+              step={PARAM_RANGES.gainLimiter.threshold.step}
+              value={gainLimiterParams.threshold}
+              onChange={(e) => handleParamChange('gainLimiter', 'threshold', parseFloat(e.target.value))}
+            />
+            <ValueDisplay>{gainLimiterParams.threshold}dB</ValueDisplay>
+          </ControlRow>
         </FormGroup>
         <FormGroup>
           <Label htmlFor="envelope">Envelope</Label>

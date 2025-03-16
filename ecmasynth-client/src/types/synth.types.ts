@@ -42,28 +42,13 @@ export interface SynthPreset {
     readonly createdAt: string;
     /** ISO timestamp of last update */
     readonly updatedAt: string;
-    /** Hashed deletion password */
-    readonly deletionHash: string;
 }
 
 /**
  * Data transfer object for creating a new preset
  * Omits auto-generated fields from SynthPreset
  */
-export type CreateSynthPresetDto = Omit<SynthPreset, 'id' | 'createdAt' | 'updatedAt' | 'deletionHash'> & {
-    /** Password for preset deletion */
-    deletionPassword: string;
-};
-
-/**
- * Data transfer object for deleting a preset
- */
-export interface DeletePresetDto {
-    /** ID of the preset to delete */
-    id: number;
-    /** Password required for deletion */
-    password: string;
-}
+export type CreateSynthPresetDto = Omit<SynthPreset, 'id' | 'createdAt' | 'updatedAt'>;
 
 /**
  * ADSR envelope parameters for amplitude shaping
@@ -178,7 +163,7 @@ export const PARAM_RANGES = {
     },
     oscillator: {
         count: { min: 1, max: 8, step: 1 },
-        spread: { min: 0, max: 100, step: 1 }
+        spread: { min: 0, max: 50, step: 1 }
     },
     filter: {
         frequency: { min: 20, max: 20000, step: 1 },
@@ -193,7 +178,7 @@ export const PARAM_RANGES = {
 /**
  * Default synthesizer parameters
  */
-export const defaultSynthParams: Readonly<SynthParams> = {
+export const defaultSynthParams: SynthParams = {
     envelope: {
         attack: 0.1,
         decay: 0.2,

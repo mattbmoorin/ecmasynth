@@ -19,6 +19,18 @@ namespace ECMASynth.API.Models
         [Required]
         public string Delay { get; set; } = string.Empty;
         
+        [Required]
+        public string Volume { get; set; } = string.Empty;
+        
+        [Required]
+        public string Oscillator { get; set; } = string.Empty;
+        
+        [Required]
+        public string Filter { get; set; } = string.Empty;
+        
+        [Required]
+        public string GainLimiter { get; set; } = string.Empty;
+        
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

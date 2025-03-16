@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "00DLqRvoaRtyjLyx5p/qJN2o0KbdCCAme3QrilPQVAI=",
+  "Source": "ECMASynth.API",
+  "BasePath": "_content/ECMASynth.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
